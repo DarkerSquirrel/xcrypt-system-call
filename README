@@ -41,7 +41,7 @@ Executing "make clean" in this directory will remove all the intermediate files 
   -------------------------------------------------------------
 | Steps to be followed for compiling and executing this project |
   -------------------------------------------------------------
-1) Check-out the hw1/skasanavesi repository from GIT. Navigate to the checked-out path.
+1) Check-out the repository from GIT. Navigate to the checked-out path.
 2) Either copy kernel.config present in this directory to .config in kernel (or) use "make" by specifying config file.
 3) Run "make modules_install".
 4) Run "make install".
