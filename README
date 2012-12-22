@@ -3,21 +3,34 @@ The source files present in this directory consists of source-code to add a new 
  --------------
 | Source files |
  -------------- 
-As specified all the source files are present in hw1-skasanavesi/hw1 directory. Please see below for details file descriptions
+As specified all the source files are present in this directory. Please see below for details file descriptions
 1) xcipher.c - This is a user-application which invokes the xcrypt() system call.
 2) xcrypt.c - This file consists of static kernel code i.e function pointer and actual xcrypt() system call and is burned into the kernel. The function pointer is exposed out, so that the loadable module can change the address to make it point to the implementation in loadable module. The actual xcrypt() system call just invokes the function pointed by the function pointer.
 3) sys_xcrypt.h - This file consists of the declarations which are needed for using the system call. The user-application must include this header in order to invoke the system call.
 4) sys_xcrypt.c - This is the loadable kernel module which consists of the system call implementation. The function pointer which is burned to the kernel code is made to point to another function in this module which does encrypt/decrypt. In this way we are hooking the system call to the loadable kernel module.
 NOTE: This file consists of source code copied CEPH File system source code present in linux/net/ceph/crypto.c I have copied the functions ceph_aes_encrypt() and ceph_aes_decrypt() functions and renamed them to aes_encrypt() and aes_decrypt(). I have modified little code in those functions.
-5) Makefile - This file has commands to compile the static kernel code as well as the loadable kernel module. The entry of "hw1" folder is made in /hw1-skasanavesi/Makefile. This is done because once "make" command is issued on the kernel(/hw1-skasanavesi), it automatically compiles both static kernel code, loadable kernel module and also the user-level program.
-6) kernel.config - As specified, I have tried to build kernel with minimum configuration. I have used www.kernel-seeds.org to find out the exact hardware devices that are present in the virtual machine. Using that information, I have included only drivers relating to the hardware configuration. The resulting minimal kernel image obtained is 3.6MB and can be found in /hw1-skasanavesi/arch/x86/boot/bzImage.
+5) Makefile - This file has commands to compile the static kernel code as well as the loadable kernel module. The entry of this folder has to be made in linux-3.2.2/Makefile. This is to be done because once "make" command is issued on the kernel, it automatically compiles both static kernel code, loadable kernel module and also the user-level program.
+6) kernel.config - As specified, I have tried to build kernel with minimum configuration. I have used www.kernel-seeds.org to find out the exact hardware devices that are present in the virtual machine. Using that information, I have included only drivers relating to the hardware configuration. 
+
+Below files need to be replaced in linux 3.2.2 kernel. the kernel sources can be downloaded from  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.2.2.tar.bz2
+
+to_be_replaced/unistd_32.h to arch/x86/include/asm/unistd_32.h
+to_be_replaced/syscall_table_32.S to arch/x86/kernel/syscall_table_32.S
+to_be_replace/sys_calls.h to include/linux/syscalls.h
+
+Further replace to below line in Makefile present in downloaded sources:
+core-y		+= kernel/ mm/ fs/ ipc/ security/ crypto/ block/ 
+
+to
+
+core-y		+= kernel/ mm/ fs/ ipc/ security/ crypto/ block/ xcrypt-system-call/
 
  -------------
 | Executables |
  -------------
-Executing "make" on hw1-skasanavesi produces xcrypt.o, sys_xcrypt.ko, xcipher and some intermediate files.
-1) xcrypt.o is burned into the kernel because it is bound with obj-y in hw1/Makefile
-2) sys_xcrypt.ko - this has to be inserted/removed manually using below commands from the folder /hw1-skasanavesi/hw1/
+Executing "make" on kernel tree produces xcrypt.o, sys_xcrypt.ko, xcipher and some intermediate files.
+1) xcrypt.o is burned into the kernel because it is bound with obj-y in the Makefile present in this directory
+2) sys_xcrypt.ko - this has to be inserted/removed manually using below commands from the current folder 
    insmod sys_xcrypt.ko - for inserting the module
    rmmod sys_xrcrypt.ko - for removing the module
 3) xcipher is the user program which invokes the system call. Instructions for executing this program are explained below.
@@ -29,11 +42,11 @@ Executing "make clean" in this directory will remove all the intermediate files 
 | Steps to be followed for compiling and executing this project |
   -------------------------------------------------------------
 1) Check-out the hw1/skasanavesi repository from GIT. Navigate to the checked-out path.
-2) Either copy kernel.config present in hw1-skasanavesi/hw1 to .config in hw1-skasanavesi (or) use "make" by specifying config file.
+2) Either copy kernel.config present in this directory to .config in kernel (or) use "make" by specifying config file.
 3) Run "make modules_install".
 4) Run "make install".
 5) Reboot the kernel and login to the new kernel.
-7) Navigate to the checked-out path i.e. /hw1-skasanavesi
+7) Navigate to the checked-out path
 8) Run "make headers_check".
 9) Run "make INSTALL_HDR_PATH=../linux-headers headers_install".
 The above steps are to be done only one-time. This will result in burning the static kernel code, compiling the loadable kernel module.
@@ -45,8 +58,8 @@ NOTE: I have followed the above steps by reading through http://www.csee.umbc.ed
  ------------------------------------------------
 I have used openssl libraries in the user-application to send the pass-phrase to the kernel. So for compiling this user-application, we need to make sure that openssl and openssl-devel are installed. They can be installed using "yum install openssl" and "yum install openssl-devel". 
 
-Executing "make" in hw1-skasanavesi/hw1 will compile user-application. But alternatively, if we want to compile then 
-Execute the below command from /hw1-skasanavesi/hw1/ directory to compile the user-application:
+Executing "make" in this directory will compile user-application. But alternatively, if we want to compile then 
+Execute the below command to compile the user-application:
 gcc -Wall -Werror xcipher.c -o xcipher -lssl -Iusr/src/linux-headers/include
 
  -------------------------------------------------
@@ -170,7 +183,7 @@ I have implemented encryption/decryption in the chunks of PAGE_SIZE (i.e. 4096 b
 NOTE: I have allocated PAGE_SIZE + 16 bytes of memory for the buffers which are needed to hold the encrypted data. The reason being, the encrypt algorithm is implemented to add a cryptographic nonce of 16 bytes in the end of the buffer being passed. If I allocated this buffer as the same size of the input data then it was creating buffer overflows when it tried to add additional 16 bytes of nonce.
 
 Testing:
-I have included a test folder inside hw1-skasanavesi/hw1. This folder consists of the input files which I have used for testing my system call. It consists of files with sizes 0 bytes, < 4096 bytes, = 4096 bytes, > 4096 bytes and another file which spans more than 2 * PAGE_SIZE.
+"test" folder consists of the input files which I have used for testing my system call. It consists of files with sizes 0 bytes, < 4096 bytes, = 4096 bytes, > 4096 bytes and another file which spans more than 2 * PAGE_SIZE.
 The file names are t<num>.txt
 The encrypted file names are t<num>_enc.txt
 The decrypted file names are t<num>_dec.txt
